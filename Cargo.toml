@@ -8,3 +8,5 @@ edition = "2018"
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 mongodb = { version = "2.0.1", default-features = false, features = ["tokio-runtime"]}
+anyhow = "1.0"
+futures = "0.3"
