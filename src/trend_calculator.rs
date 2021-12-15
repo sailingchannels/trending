@@ -8,10 +8,10 @@ pub fn calculate(
     max_views: f64,
     last_upload_at_timestamp: u64,
 ) -> f64 {
-    const HISTORICAL_VIEW_POPULARITY_FACTOR: f64 = 0.3;
-    const HISTORICAL_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.1;
-    const CURRENT_VIEW_POPULARITY_FACTOR: f64 = 0.1;
-    const CURRENT_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.3;
+    const HISTORICAL_VIEW_POPULARITY_FACTOR: f64 = 0.01;
+    const HISTORICAL_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.7;
+    const CURRENT_VIEW_POPULARITY_FACTOR: f64 = 0.01;
+    const CURRENT_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.08;
     const LAST_UPLOAD_POPULARITY_FACTOR: f64 = 0.2;
 
     let historical_subscriber_popularity = calculate_historical_popularity(&historical_subscribers);
@@ -31,15 +31,15 @@ pub fn calculate(
 }
 
 fn calculate_last_upload_popularity(last_upload_at_timestamp: u64) -> f64 {
-    const ONE_MONTH_IN_SECS: u64 = 2629746;
+    const ONE_MONTH_IN_SECS: f64 = 2629746.0;
 
     let max_timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
-        .as_secs();
+        .as_secs() as f64;
 
     let min_timestamp = max_timestamp - ONE_MONTH_IN_SECS;
-    ((last_upload_at_timestamp - min_timestamp) / (max_timestamp - min_timestamp)) as f64
+    (last_upload_at_timestamp as f64 - min_timestamp) / (max_timestamp - min_timestamp)
 }
 
 fn calculate_current_popularity(observations: &Vec<Observation>, max_value: f64) -> f64 {
@@ -57,9 +57,9 @@ fn calculate_historical_popularity(observations: &Vec<Observation>) -> f64 {
     let mut popularity = 0.0;
 
     let min = obs.iter().fold(f64::INFINITY, |a, b| a.min(b.value));
-    let max = obs.iter().fold(f64::INFINITY, |a, b| a.max(b.value));
+    let max = obs.iter().fold(-f64::INFINITY, |a, b| a.max(b.value));
 
-    for i in 0..obs.len() {
+    for i in 0..obs.len() - 1 {
         let first_value = &obs[i];
         let second_value = &obs[i + 1];
 

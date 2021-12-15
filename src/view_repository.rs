@@ -23,13 +23,13 @@ impl ViewRepository {
     ) -> Result<Vec<Observation>, anyhow::Error> {
         let find_options = FindOptions::builder()
             .sort(doc! { "_id.date": -1 })
-            .projection(doc! { "views": 1 })
+            .projection(doc! { "views": 1, "_id.date": 1 })
             .limit(days)
             .build();
 
         let views_cursor = self
             .collection
-            .find(doc! { "_id":  channel_id}, find_options)
+            .find(doc! { "_id.channel":  channel_id}, find_options)
             .await?;
 
         let documents: Vec<Document> = views_cursor.try_collect().await?;
@@ -37,12 +37,14 @@ impl ViewRepository {
             .iter()
             .map(|document| {
                 let views = document.get_i32("views").unwrap();
+                let id = document.get_document("_id").unwrap();
 
                 Observation {
                     value: f64::from(views),
-                    timestamp: document.get_i32("_id.date").unwrap(),
+                    timestamp: id.get_i32("date").unwrap_or(-1),
                 }
             })
+            .filter(|observation| observation.timestamp > 0)
             .collect();
 
         Ok(views)
