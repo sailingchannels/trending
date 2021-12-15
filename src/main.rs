@@ -1,4 +1,5 @@
 use mongodb::{options::ClientOptions, Client};
+use rusty_pool::ThreadPool;
 use std::env;
 use tokio::time::{sleep, Duration};
 
@@ -12,10 +13,12 @@ mod view_repository;
 pub async fn main() -> Result<(), anyhow::Error> {
     let six_hours_in_seconds = 6 * 60 * 60 * 1000;
     let default_mongodb_conn_string = "mongodb://127.0.0.1:27017".to_string();
-    let historical_days: i64 = 5;
+    const historical_days: i64 = 5;
 
     let connection_string =
         env::var("MONGO_CONNECTION_STRING").unwrap_or(default_mongodb_conn_string);
+
+    let pool = ThreadPool::default();
 
     loop {
         let opts = ClientOptions::parse(&connection_string).await?;
@@ -30,25 +33,30 @@ pub async fn main() -> Result<(), anyhow::Error> {
         let max_views = channel_repo.get_max_views().await?;
 
         for channel in channels.iter() {
-            let channel_id = channel.get_str("_id").unwrap();
-            let channel_last_upload_at = channel.get_i32("lastUploadAt").unwrap();
+            pool.spawn(async {
+                let channel = channel;
+                let channel_id = channel.get_str("_id").unwrap();
+                let channel_last_upload_at = channel.get_i32("lastUploadAt").unwrap_or(0);
 
-            let historical_views = view_repo.get_last_days(channel_id, historical_days).await?;
-            let historical_subscribers = subscriber_repo
-                .get_last_days(channel_id, historical_days)
-                .await?;
+                let historical_views = view_repo.get_last_days(channel_id, historical_days).await;
+                let historical_subscribers = subscriber_repo
+                    .get_last_days(channel_id, historical_days)
+                    .await;
 
-            let trend = trend_calculator::calculate(
-                historical_subscribers,
-                historical_views,
-                max_subscribers,
-                max_views,
-                channel_last_upload_at as u64,
-            );
+                let trend = trend_calculator::calculate(
+                    historical_subscribers.unwrap(),
+                    historical_views.unwrap(),
+                    max_subscribers,
+                    max_views,
+                    channel_last_upload_at as u64,
+                );
 
-            channel_repo.update_trend(channel_id, trend).await;
-            println!("Update popularity of channel {} to {}", channel_id, trend)
+                channel_repo.update_trend(channel_id, trend).await;
+                println!("Update popularity of channel {} to {}", channel_id, trend);
+            });
         }
+
+        pool.join();
 
         println!("Wait 6 hours till next execution...");
         sleep(Duration::from_secs(six_hours_in_seconds)).await;
