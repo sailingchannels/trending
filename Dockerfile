@@ -16,6 +16,9 @@ RUN rm src/*.rs
 # copy your source tree
 COPY ./src ./src
 
+# run tests
+RUN cargo test
+
 # build for release
 RUN rm ./target/release/deps/trending*
 RUN cargo build --release

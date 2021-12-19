@@ -39,7 +39,11 @@ fn calculate_last_upload_popularity(last_upload_at_timestamp: u64) -> f64 {
         .as_secs() as f64;
 
     let min_timestamp = max_timestamp - ONE_MONTH_IN_SECS;
-    (last_upload_at_timestamp as f64 - min_timestamp) / (max_timestamp - min_timestamp)
+    normalize(
+        last_upload_at_timestamp as f64,
+        min_timestamp,
+        max_timestamp,
+    )
 }
 
 fn calculate_current_popularity(observations: &Vec<&Observation>, max_value: f64) -> f64 {
@@ -51,7 +55,7 @@ fn calculate_current_popularity(observations: &Vec<&Observation>, max_value: f64
     obs.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
     let latest_value = obs.first().unwrap().value;
 
-    1.0 - latest_value / max_value
+    1.0 - (latest_value / max_value).min(1.0).max(0.0)
 }
 
 fn calculate_historical_popularity(observations: &Vec<&Observation>) -> f64 {
@@ -81,5 +85,105 @@ fn calculate_historical_popularity(observations: &Vec<&Observation>) -> f64 {
 }
 
 fn normalize(value: f64, min: f64, max: f64) -> f64 {
-    (value - min) / (max - min).max(1.0)
+    ((value - min) / (max - min)).min(1.0).max(0.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn should_normalize_min_value_to_zero() {
+        let result = normalize(0.0, 0.0, 11010.0);
+        assert_eq!(result, 0.0);
+    }
+
+    #[test]
+    fn should_normalize_max_value_to_one() {
+        let result = normalize(11010.0, 0.0, 11010.0);
+        assert_eq!(result, 1.0);
+    }
+
+    #[test]
+    fn should_normalize_center_value_to_one() {
+        let result = normalize(5505.0, 0.0, 11010.0);
+        assert_eq!(result, 0.5);
+    }
+
+    #[test]
+    fn should_calculate_last_upload_popularity_to_zero_if_timestamp_older_than_one_month() {
+        let result = calculate_last_upload_popularity(15);
+        assert_eq!(result, 0.0);
+    }
+
+    #[test]
+    fn should_calculate_last_upload_popularity_to_one_if_timestamp_in_the_future() {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as u64;
+
+        let result = calculate_last_upload_popularity(timestamp * 2);
+        assert_eq!(result, 1.0);
+    }
+
+    #[test]
+    fn should_calculate_last_upload_popularity_within_range_if_few_seconds_ago() {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as u64;
+
+        let result = calculate_last_upload_popularity(timestamp - 100);
+        assert!(result > 0.0 && result < 1.0);
+    }
+
+    #[test]
+    fn should_calculate_current_popularity_to_zero_if_no_observations() {
+        let result = calculate_current_popularity(&vec![], 11010.0);
+        assert_eq!(result, 0.0);
+    }
+
+    #[test]
+    fn should_calculate_current_populartiy_to_zero_if_highest_value_is_max_value() {
+        let obseration_1 = Observation {
+            channel_id: "channel".to_string(),
+            value: 11010.0,
+            timestamp: 1,
+        };
+
+        let obseration_2 = Observation {
+            channel_id: "channel".to_string(),
+            value: 123.0,
+            timestamp: 0,
+        };
+
+        let observations = vec![&obseration_1, &obseration_2];
+
+        let result = calculate_current_popularity(&observations, 11010.0);
+
+        assert_eq!(result, 0.0);
+    }
+
+    #[test]
+    fn should_calculate_current_populartiy_to_zero_if_highest_value_is_greater_than_max_value() {
+        let obseration_1 = Observation {
+            channel_id: "channel".to_string(),
+            value: 21010.0,
+            timestamp: 1,
+        };
+
+        let obseration_2 = Observation {
+            channel_id: "channel".to_string(),
+            value: 123.0,
+            timestamp: 0,
+        };
+
+        let observations = vec![&obseration_1, &obseration_2];
+
+        let result = calculate_current_popularity(&observations, 11010.0);
+
+        assert_eq!(result, 0.0);
+    }
 }

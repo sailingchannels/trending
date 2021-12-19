@@ -38,21 +38,19 @@ pub async fn main() -> Result<(), anyhow::Error> {
         let historical_subscribers_fut = subscriber_repo.get_last_days(historical_days);
         let historical_views_fut = view_repo.get_last_days(historical_days);
 
-        let results = join!(
-            channels_fut,
-            max_subscribers_fut,
-            max_views_fut,
-            historical_subscribers_fut,
-            historical_views_fut
-        );
-
         let (
             channels,
             max_subscribers_result,
             max_views_result,
             historical_subscribers_result,
             historical_views_result,
-        ) = results;
+        ) = join!(
+            channels_fut,
+            max_subscribers_fut,
+            max_views_fut,
+            historical_subscribers_fut,
+            historical_views_fut
+        );
 
         let max_subscribers = max_subscribers_result.unwrap();
         let max_views = max_views_result.unwrap();
