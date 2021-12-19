@@ -1,4 +1,4 @@
-use crate::observation::Observation;
+use crate::{observation::Observation, timing};
 use futures::stream::TryStreamExt;
 use mongodb::bson::{doc, Document};
 use mongodb::options::FindOptions;
@@ -16,20 +16,16 @@ impl SubscriberRepository {
         SubscriberRepository { collection: feeds }
     }
 
-    pub async fn get_last_days(
-        &self,
-        channel_id: &str,
-        days: i64,
-    ) -> Result<Vec<Observation>, anyhow::Error> {
+    pub async fn get_last_days(&self, days: i64) -> Result<Vec<Observation>, anyhow::Error> {
         let find_options = FindOptions::builder()
-            .sort(doc! { "_id.date": -1 })
-            .projection(doc! { "subscribers": 1, "_id.date": 1 })
-            .limit(days)
+            .projection(doc! { "subscribers": 1, "_id.date": 1, "_id.channel": 1 })
             .build();
+
+        let start_date = timing::get_last_days(days);
 
         let subscribers_cursor = self
             .collection
-            .find(doc! { "_id.channel":  channel_id}, find_options)
+            .find(doc! { "_id.date":  {"$gte": start_date}}, find_options)
             .await?;
 
         let documents: Vec<Document> = subscribers_cursor.try_collect().await?;
@@ -40,6 +36,7 @@ impl SubscriberRepository {
                 let id = document.get_document("_id").unwrap();
 
                 Observation {
+                    channel_id: id.get_str("channel").unwrap().to_string(),
                     value: f64::from(subscribers),
                     timestamp: id.get_i32("date").unwrap_or(-1),
                 }
