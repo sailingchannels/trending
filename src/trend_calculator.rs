@@ -64,19 +64,25 @@ fn calculate_historical_popularity(observations: &Vec<&Observation>) -> f64 {
     }
 
     let mut obs = observations.to_vec();
-    obs.reverse();
+    obs.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 
     let mut popularity = 0.0;
 
     let min = obs.iter().fold(f64::INFINITY, |a, b| a.min(b.value));
     let max = obs.iter().fold(-f64::INFINITY, |a, b| a.max(b.value));
 
+    println!("min: {}, max: {}", min, max);
+
     for i in 0..obs.len() - 1 {
         let first_value = obs[i];
         let second_value = obs[i + 1];
 
+        println!("{} {}", first_value.value, second_value.value);
+
         let gradient =
             normalize(second_value.value, min, max) - normalize(first_value.value, min, max);
+
+        println!("gradient: {}", gradient);
 
         popularity += gradient;
     }
@@ -185,5 +191,54 @@ mod tests {
         let result = calculate_current_popularity(&observations, 11010.0);
 
         assert_eq!(result, 0.0);
+    }
+
+    #[test]
+    fn should_calculate_historical_popularity_of_two_observation_series() {
+        let observation_1 = Observation {
+            channel_id: "channel a".to_string(),
+            value: 10.0,
+            timestamp: 1,
+        };
+
+        let observation_2 = Observation {
+            channel_id: "channel a".to_string(),
+            value: 11.0,
+            timestamp: 2,
+        };
+
+        let observation_3 = Observation {
+            channel_id: "channel a".to_string(),
+            value: 10.0,
+            timestamp: 3,
+        };
+
+        let result_a =
+            calculate_historical_popularity(&vec![&observation_1, &observation_2, &observation_3]);
+
+        let observation_4 = Observation {
+            channel_id: "channel b".to_string(),
+            value: 1000.0,
+            timestamp: 1,
+        };
+
+        let observation_5 = Observation {
+            channel_id: "channel b".to_string(),
+            value: 1100.0,
+            timestamp: 2,
+        };
+
+        let observation_6 = Observation {
+            channel_id: "channel b".to_string(),
+            value: 30.0,
+            timestamp: 3,
+        };
+
+        let result_b =
+            calculate_historical_popularity(&vec![&observation_4, &observation_5, &observation_6]);
+
+        println!("a: {}, b: {}", result_a, result_b);
+
+        assert!(result_a > result_b);
     }
 }
