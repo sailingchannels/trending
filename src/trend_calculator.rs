@@ -170,13 +170,13 @@ mod tests {
     fn should_calculate_current_populartiy_to_zero_if_highest_value_is_greater_than_max_value() {
         let obseration_1 = Observation {
             channel_id: "channel".to_string(),
-            value: 21010.0,
+            value: 11010.0,
             timestamp: 1,
         };
 
         let obseration_2 = Observation {
             channel_id: "channel".to_string(),
-            value: 123.0,
+            value: 1238765.0,
             timestamp: 0,
         };
 
