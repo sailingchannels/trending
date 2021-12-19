@@ -14,7 +14,7 @@ mod view_repository;
 
 #[tokio::main]
 pub async fn main() -> Result<(), anyhow::Error> {
-    let six_hours_in_seconds = 6 * 60 * 60 * 1000;
+    let two_hours_in_seconds = 2 * 60 * 60 * 1000;
     let default_mongodb_conn_string = "mongodb://127.0.0.1:27017".to_string();
     let historical_days: i64 = 5;
 
@@ -83,10 +83,11 @@ pub async fn main() -> Result<(), anyhow::Error> {
                 channel_last_upload_at as u64,
             );
 
-            //channel_repo.update_trend(channel_id, trend).await;
+            println!("Update popularity of channel {} to {}", channel_id, trend);
+            channel_repo.update_trend(channel_id, trend).await;
         }
 
-        println!("Wait 6 hours till next execution...");
-        sleep(Duration::from_secs(six_hours_in_seconds)).await;
+        println!("Wait 2 hours till next execution...");
+        sleep(Duration::from_secs(two_hours_in_seconds)).await;
     }
 }
