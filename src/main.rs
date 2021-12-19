@@ -3,6 +3,8 @@ use mongodb::{options::ClientOptions, Client};
 use std::env;
 use tokio::time::{sleep, Duration};
 
+use crate::observation::Observation;
+
 mod channel_repository;
 mod observation;
 mod subscriber_repository;
@@ -23,6 +25,8 @@ pub async fn main() -> Result<(), anyhow::Error> {
         let opts = ClientOptions::parse(&connection_string).await?;
         let client = Client::with_options(opts)?;
 
+        println!("Start loading data into memory");
+
         let channel_repo = channel_repository::ChannelRepository::new(&client);
         let view_repo = view_repository::ViewRepository::new(&client);
         let subscriber_repo = subscriber_repository::SubscriberRepository::new(&client);
@@ -42,20 +46,44 @@ pub async fn main() -> Result<(), anyhow::Error> {
             historical_views_fut
         );
 
-        for channel in channels.iter() {
+        let (
+            channels,
+            max_subscribers_result,
+            max_views_result,
+            historical_subscribers_result,
+            historical_views_result,
+        ) = results;
+
+        let max_subscribers = max_subscribers_result.unwrap();
+        let max_views = max_views_result.unwrap();
+        let historical_subscribers = historical_subscribers_result.unwrap();
+        let historical_views = historical_views_result.unwrap();
+
+        println!("Start calculating trends");
+
+        for channel in channels.unwrap().iter() {
             let channel_id = channel.get_str("_id").unwrap();
             let channel_last_upload_at = channel.get_i32("lastUploadAt").unwrap_or_default();
 
+            let channel_historical_subscribers = historical_subscribers
+                .iter()
+                .filter(|subscriber| subscriber.channel_id == channel_id)
+                .collect::<Vec<&Observation>>();
+
+            let channel_historical_views = historical_views
+                .iter()
+                .filter(|view| view.channel_id == channel_id)
+                .collect::<Vec<&Observation>>();
+
             let trend = trend_calculator::calculate(
-                historical_subscribers,
-                historical_views,
+                channel_historical_subscribers,
+                channel_historical_views,
                 max_subscribers,
                 max_views,
                 channel_last_upload_at as u64,
             );
 
             //channel_repo.update_trend(channel_id, trend).await;
-            println!("Update popularity of channel {} to {}", channel_id, trend)
         }
 
         println!("Wait 6 hours till next execution...");

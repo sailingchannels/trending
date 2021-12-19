@@ -2,8 +2,8 @@ use crate::observation::Observation;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn calculate(
-    historical_subscribers: Vec<Observation>,
-    historical_views: Vec<Observation>,
+    historical_subscribers: Vec<&Observation>,
+    historical_views: Vec<&Observation>,
     max_subscribers: f64,
     max_views: f64,
     last_upload_at_timestamp: u64,
@@ -42,7 +42,11 @@ fn calculate_last_upload_popularity(last_upload_at_timestamp: u64) -> f64 {
     (last_upload_at_timestamp as f64 - min_timestamp) / (max_timestamp - min_timestamp)
 }
 
-fn calculate_current_popularity(observations: &Vec<Observation>, max_value: f64) -> f64 {
+fn calculate_current_popularity(observations: &Vec<&Observation>, max_value: f64) -> f64 {
+    if observations.len() == 0 {
+        return 0.0;
+    }
+
     let mut obs = observations.to_vec();
     obs.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
     let latest_value = obs.first().unwrap().value;
@@ -50,7 +54,11 @@ fn calculate_current_popularity(observations: &Vec<Observation>, max_value: f64)
     1.0 - latest_value / max_value
 }
 
-fn calculate_historical_popularity(observations: &Vec<Observation>) -> f64 {
+fn calculate_historical_popularity(observations: &Vec<&Observation>) -> f64 {
+    if observations.len() == 0 {
+        return 0.0;
+    }
+
     let mut obs = observations.to_vec();
     obs.reverse();
 
@@ -60,8 +68,8 @@ fn calculate_historical_popularity(observations: &Vec<Observation>) -> f64 {
     let max = obs.iter().fold(-f64::INFINITY, |a, b| a.max(b.value));
 
     for i in 0..obs.len() - 1 {
-        let first_value = &obs[i];
-        let second_value = &obs[i + 1];
+        let first_value = obs[i];
+        let second_value = obs[i + 1];
 
         let gradient =
             normalize(second_value.value, min, max) - normalize(first_value.value, min, max);
