@@ -14,7 +14,6 @@ COPY ./src ./src
 RUN cargo test
 
 # build for release
-RUN rm ./target/release/deps/trending*
 RUN cargo build --release
 
 # our final base
