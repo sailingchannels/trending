@@ -1,6 +1,6 @@
 use futures::stream::TryStreamExt;
 use mongodb::bson::{doc, DateTime, Document};
-use mongodb::options::{FindOneOptions, FindOptions};
+use mongodb::options::FindOptions;
 use mongodb::{Client, Collection};
 
 pub struct ChannelRepository {

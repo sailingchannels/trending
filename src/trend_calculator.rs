@@ -6,9 +6,9 @@ pub fn calculate(
     historical_views: Vec<&Observation>,
     last_upload_at_timestamp: u64,
 ) -> f64 {
-    const HISTORICAL_VIEW_POPULARITY_FACTOR: f64 = 0.15;
-    const HISTORICAL_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.5;
-    const LAST_UPLOAD_POPULARITY_FACTOR: f64 = 0.25;
+    const HISTORICAL_VIEW_POPULARITY_FACTOR: f64 = 0.3;
+    const HISTORICAL_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.3;
+    const LAST_UPLOAD_POPULARITY_FACTOR: f64 = 0.4;
 
     let historical_subscriber_popularity = calculate_historical_popularity(&historical_subscribers);
     let historical_view_popularity = calculate_historical_popularity(&historical_views);
@@ -44,28 +44,22 @@ fn calculate_historical_popularity(observations: &Vec<&Observation>) -> f64 {
     let mut obs = observations.to_vec();
     obs.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 
-    let mut popularity = 0.0;
+    let mut popularity = 0.;
 
     let min = obs.iter().fold(f64::INFINITY, |a, b| a.min(b.value));
     let max = obs.iter().fold(-f64::INFINITY, |a, b| a.max(b.value));
 
     println!("min: {}, max: {}", min, max);
 
-    for i in 0..obs.len() - 1 {
-        let first_value = obs[i];
-        let second_value = obs[i + 1];
+    for i in 1..obs.len() {
+        if obs[i - 1].value != 0.0 {
+            let rate_of_change = (obs[i].value / obs[i - 1].value) - 1.;
 
-        println!("{} {}", first_value.value, second_value.value);
-
-        let gradient =
-            normalize(second_value.value, min, max) - normalize(first_value.value, min, max);
-
-        println!("gradient: {}", gradient);
-
-        popularity += gradient;
+            popularity += rate_of_change;
+        }
     }
 
-    popularity
+    popularity / obs.len() as f64
 }
 
 fn normalize(value: f64, min: f64, max: f64) -> f64 {
