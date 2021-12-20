@@ -5,28 +5,24 @@ pub fn calculate(
     historical_subscribers: Vec<&Observation>,
     historical_views: Vec<&Observation>,
     max_subscribers: f64,
-    max_views: f64,
     last_upload_at_timestamp: u64,
 ) -> f64 {
-    const HISTORICAL_VIEW_POPULARITY_FACTOR: f64 = 0.01;
-    const HISTORICAL_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.7;
-    const CURRENT_VIEW_POPULARITY_FACTOR: f64 = 0.01;
-    const CURRENT_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.08;
-    const LAST_UPLOAD_POPULARITY_FACTOR: f64 = 0.2;
+    const HISTORICAL_VIEW_POPULARITY_FACTOR: f64 = 0.15;
+    const HISTORICAL_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.5;
+    const CURRENT_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.1;
+    const LAST_UPLOAD_POPULARITY_FACTOR: f64 = 0.25;
 
     let historical_subscriber_popularity = calculate_historical_popularity(&historical_subscribers);
     let historical_view_popularity = calculate_historical_popularity(&historical_views);
 
     let current_subscriber_popularity =
         calculate_current_popularity(&historical_subscribers, max_subscribers);
-    let current_view_popularity = calculate_current_popularity(&historical_views, max_views);
 
     let last_upload_popularity = calculate_last_upload_popularity(last_upload_at_timestamp);
 
     historical_subscriber_popularity * HISTORICAL_SUBSCRIBER_POPULARITY_FACTOR
         + historical_view_popularity * HISTORICAL_VIEW_POPULARITY_FACTOR
         + current_subscriber_popularity * CURRENT_SUBSCRIBER_POPULARITY_FACTOR
-        + current_view_popularity * CURRENT_VIEW_POPULARITY_FACTOR
         + last_upload_popularity * LAST_UPLOAD_POPULARITY_FACTOR
 }
 
