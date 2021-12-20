@@ -26,30 +26,6 @@ impl ChannelRepository {
         Ok(channels)
     }
 
-    pub async fn get_max_subscribers(&self) -> Result<f64, anyhow::Error> {
-        let find_options = FindOneOptions::builder()
-            .sort(doc! { "subscribers": -1 })
-            .projection(doc! { "subscribers": 1 })
-            .build();
-
-        let channel = self.collection.find_one(None, find_options).await?;
-        let subscribers = channel.unwrap().get_i32("subscribers").unwrap();
-
-        Ok(f64::from(subscribers))
-    }
-
-    pub async fn get_max_views(&self) -> Result<f64, anyhow::Error> {
-        let find_options = FindOneOptions::builder()
-            .sort(doc! { "views": -1 })
-            .projection(doc! { "views": 1 })
-            .build();
-
-        let channel = self.collection.find_one(None, find_options).await?;
-        let views = channel.unwrap().get_i32("views").unwrap();
-
-        Ok(f64::from(views))
-    }
-
     pub async fn update_trend(&self, channel_id: &str, trend: f64) {
         let update = doc! {
             "$set": {

@@ -32,24 +32,16 @@ pub async fn main() -> Result<(), anyhow::Error> {
         let subscriber_repo = subscriber_repository::SubscriberRepository::new(&client);
 
         let channels_fut = channel_repo.get_all();
-        let max_subscribers_fut = channel_repo.get_max_subscribers();
 
         let historical_subscribers_fut = subscriber_repo.get_last_days(historical_days);
         let historical_views_fut = view_repo.get_last_days(historical_days);
 
-        let (
-            channels,
-            max_subscribers_result,
-            historical_subscribers_result,
-            historical_views_result,
-        ) = join!(
+        let (channels, historical_subscribers_result, historical_views_result) = join!(
             channels_fut,
-            max_subscribers_fut,
             historical_subscribers_fut,
             historical_views_fut
         );
 
-        let max_subscribers = max_subscribers_result.unwrap();
         let historical_subscribers = historical_subscribers_result.unwrap();
         let historical_views = historical_views_result.unwrap();
 
@@ -72,7 +64,6 @@ pub async fn main() -> Result<(), anyhow::Error> {
             let trend = trend_calculator::calculate(
                 channel_historical_subscribers,
                 channel_historical_views,
-                max_subscribers,
                 channel_last_upload_at as u64,
             );
 
