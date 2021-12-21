@@ -6,9 +6,9 @@ pub fn calculate(
     historical_views: Vec<&Observation>,
     last_upload_at_timestamp: u64,
 ) -> f64 {
-    const HISTORICAL_VIEW_POPULARITY_FACTOR: f64 = 0.1;
-    const HISTORICAL_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.6;
-    const LAST_UPLOAD_POPULARITY_FACTOR: f64 = 0.3;
+    const HISTORICAL_VIEW_POPULARITY_FACTOR: f64 = 0.01;
+    const HISTORICAL_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.89;
+    const LAST_UPLOAD_POPULARITY_FACTOR: f64 = 0.1;
 
     let historical_subscriber_popularity = calculate_historical_popularity(&historical_subscribers);
     let historical_view_popularity = calculate_historical_popularity(&historical_views);
@@ -48,7 +48,17 @@ fn calculate_historical_popularity(observations: &Vec<&Observation>) -> f64 {
 
     for i in 1..obs.len() {
         if obs[i - 1].value != 0.0 {
-            let rate_of_change = (obs[i].value / obs[i - 1].value) - 1.;
+            let mut rate_of_change = (obs[i].value / obs[i - 1].value) - 1.;
+            if rate_of_change > 0.0 {
+                rate_of_change += 1.0;
+            }
+
+            println!(
+                "{} / {} = {}",
+                obs[i].value,
+                obs[i - 1].value,
+                rate_of_change
+            );
 
             popularity += rate_of_change;
         }
