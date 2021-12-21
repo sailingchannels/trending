@@ -6,9 +6,9 @@ pub fn calculate(
     historical_views: Vec<&Observation>,
     last_upload_at_timestamp: u64,
 ) -> f64 {
-    const HISTORICAL_VIEW_POPULARITY_FACTOR: f64 = 0.3;
-    const HISTORICAL_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.3;
-    const LAST_UPLOAD_POPULARITY_FACTOR: f64 = 0.4;
+    const HISTORICAL_VIEW_POPULARITY_FACTOR: f64 = 0.1;
+    const HISTORICAL_SUBSCRIBER_POPULARITY_FACTOR: f64 = 0.6;
+    const LAST_UPLOAD_POPULARITY_FACTOR: f64 = 0.3;
 
     let historical_subscriber_popularity = calculate_historical_popularity(&historical_subscribers);
     let historical_view_popularity = calculate_historical_popularity(&historical_views);
