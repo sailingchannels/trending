@@ -49,8 +49,13 @@ fn calculate_historical_popularity(observations: &Vec<&Observation>) -> f64 {
     for i in 1..obs.len() {
         if obs[i - 1].value != 0.0 {
             let mut rate_of_change = (obs[i].value / obs[i - 1].value) - 1.;
+
             if rate_of_change > 0.0 {
                 rate_of_change += 1.0;
+            }
+
+            if rate_of_change < 0.0 {
+                rate_of_change -= 1.0;
             }
 
             println!(
