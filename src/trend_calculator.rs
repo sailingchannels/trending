@@ -46,11 +46,6 @@ fn calculate_historical_popularity(observations: &Vec<&Observation>) -> f64 {
 
     let mut popularity = 0.;
 
-    let min = obs.iter().fold(f64::INFINITY, |a, b| a.min(b.value));
-    let max = obs.iter().fold(-f64::INFINITY, |a, b| a.max(b.value));
-
-    println!("min: {}, max: {}", min, max);
-
     for i in 1..obs.len() {
         if obs[i - 1].value != 0.0 {
             let rate_of_change = (obs[i].value / obs[i - 1].value) - 1.;
