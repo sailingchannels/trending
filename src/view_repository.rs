@@ -1,5 +1,6 @@
 use crate::{observation::Observation, timing};
 use futures::stream::TryStreamExt;
+use mongodb::bson::spec::ElementType;
 use mongodb::bson::{doc, Document};
 use mongodb::options::FindOptions;
 use mongodb::{Client, Collection};
@@ -32,12 +33,17 @@ impl ViewRepository {
         let views = documents
             .iter()
             .map(|document| {
-                let views = document.get_i32("views").unwrap();
+                let views = match document.get("views").unwrap().element_type() {
+                    ElementType::Int32 => document.get_i32("views").unwrap() as f64,
+                    ElementType::Int64 => document.get_i64("views").unwrap() as f64,
+                    _ => 0.0,
+                };
+
                 let id = document.get_document("_id").unwrap();
 
                 Observation {
                     channel_id: id.get_str("channel").unwrap().to_string(),
-                    value: f64::from(views),
+                    value: views,
                     timestamp: id.get_i32("date").unwrap_or(-1),
                 }
             })

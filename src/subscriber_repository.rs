@@ -1,5 +1,6 @@
 use crate::{observation::Observation, timing};
 use futures::stream::TryStreamExt;
+use mongodb::bson::spec::ElementType;
 use mongodb::bson::{doc, Document};
 use mongodb::options::FindOptions;
 use mongodb::{Client, Collection};
@@ -32,12 +33,17 @@ impl SubscriberRepository {
         let subscribers = documents
             .iter()
             .map(|document| {
-                let subscribers = document.get_i32("subscribers").unwrap();
+                let subscribers = match document.get("subscribers").unwrap().element_type() {
+                    ElementType::Int32 => document.get_i32("subscribers").unwrap() as f64,
+                    ElementType::Int64 => document.get_i64("subscribers").unwrap() as f64,
+                    _ => 0.0,
+                };
+
                 let id = document.get_document("_id").unwrap();
 
                 Observation {
                     channel_id: id.get_str("channel").unwrap().to_string(),
-                    value: f64::from(subscribers),
+                    value: subscribers,
                     timestamp: id.get_i32("date").unwrap_or(-1),
                 }
             })
